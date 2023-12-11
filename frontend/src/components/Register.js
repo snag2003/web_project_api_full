@@ -11,8 +11,8 @@ function Register(props) {
   }
 
   useEffect(() => {
-    if (localStorage.getItem("jwt")) {
-      history.push("/around");
+    if (localStorage.getItem("token")) {
+      history.push("/main");
     }
   }, [history, props.loggedIn]);
 

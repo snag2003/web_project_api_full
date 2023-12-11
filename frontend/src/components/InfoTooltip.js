@@ -1,6 +1,6 @@
 import closeButton from "../images/close-button.svg";
 
-function InfoTooltip(props) {
+function InfoToolTip(props) {
   return (
     <div className={`popup ${props.popupState ? "popup__visible" : ""}`}>
       <div className="popup__container">
@@ -27,4 +27,4 @@ function InfoTooltip(props) {
   );
 }
 
-export default InfoTooltip;
+export default InfoToolTip;

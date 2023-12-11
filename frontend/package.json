@@ -19,7 +19,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "deploy": "scp -r -i ~/.ssh ./build/* stephanynag@stephanydev.justlearning.net:/home/stephanynag/web_project_api_full/around-frontend"
   },
   "eslintConfig": {
     "extends": [
@@ -38,6 +38,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "homepage": "https://snag2003.github.io/web_project_around-react_es"
+  }
 }

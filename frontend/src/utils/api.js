@@ -4,86 +4,136 @@ class Api {
     this.headers = options.headers;
   }
 
-  _handleResponse(res) {
-    if (!res.ok) {
-      const errorMessage = `Error: ${res.status}`;
-      throw new Error(errorMessage);
-    }
-    return res.json();
-  }
-
-  _handleRequest(url, method, body = null) {
-    const requestOptions = {
-      method,
-      headers: this.headers,
-      body: body ? JSON.stringify(body) : null,
-    };
-
-    return fetch(`${this.baseUrl}${url}`, requestOptions)
-      .then((response) => this._handleResponse(response))
-      .catch((error) => {
-        console.log(error);
-      });
-  }
-
-  getInitialCards() {
-    return this._handleRequest("/cards", "GET");
-  }
-
-  getUserInfo() {
-    return this._handleRequest("/users/me", "GET");
-  }
-
-  editUserInfo(data) {
-    return this._handleRequest("/users/me", "PATCH", {
-      name: data.name,
-      about: data.about,
+  getInitialCards(token) {
+    return fetch(`${this.baseUrl}/cards`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    }).then((res) => {
+      if (res.ok) {
+        return res.json();
+      }
     });
   }
 
-  editAvatar(avatar) {
-    return this._handleRequest("/users/me/avatar", "PATCH", {
-      avatar: avatar,
+  getUserInfo(token) {
+    return fetch(`${this.baseUrl}/users/me`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    }).then((res) => {
+      if (res.ok) {
+        return res.json();
+      }
     });
   }
 
-  postNewCard(card) {
-    return this._handleRequest("/cards", "POST", {
-      name: card.name,
-      link: card.link,
+  editUserInfo(data, token) {
+    return fetch(`${this.baseUrl}/users/me`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      method: "PATCH",
+      body: JSON.stringify({ name: data.name, about: data.about }),
+    }).then((res) => {
+      if (res.ok) {
+        return res.json();
+      }
     });
   }
 
-  deleteCard(cardId) {
-    return this._handleRequest(`/cards/${cardId}`, "DELETE");
+  editAvatar(avatar, token) {
+    return fetch(`${this.baseUrl}/users/me/avatar`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      method: "PATCH",
+      body: JSON.stringify({ avatar: avatar }),
+    }).then((res) => {
+      if (res.ok) {
+        return res.json();
+      }
+    });
   }
 
-  setCardIcons() {
-    return this._handleRequest("/users/me", "GET");
+  postNewCard(card, token) {
+    return fetch(`${this.baseUrl}/cards`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      method: "POST",
+      body: JSON.stringify({
+        name: card.name,
+        link: card.link,
+      }),
+    }).then((res) => {
+      if (res.ok) {
+        return res.json();
+      }
+    });
   }
 
-  cardLiked(cardId) {
-    return this._handleRequest(`/cards/likes/${cardId}`, "PUT");
+  deleteCard(cardId, token) {
+    return fetch(`${this.baseUrl}/cards/${cardId}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      method: "DELETE",
+    });
   }
 
-  cardUnliked(cardId) {
-    return this._handleRequest(`/cards/likes/${cardId}`, "DELETE");
+  setCardIcons(token) {
+    return fetch(`${this.baseUrl}/users/me`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
   }
 
-  changeLikeCardStatus(cardId, isLiked) {
-    return this._handleRequest(
-      `/cards/likes/${cardId}`,
-      isLiked ? "PUT" : "DELETE"
-    );
+  cardLiked(cardId, token) {
+    return fetch(`${this.baseUrl}/cards/likes/${cardId}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      method: "PUT",
+    });
+  }
+
+  cardUnliked(cardId, token) {
+    return fetch(`${this.baseUrl}/cards/likes/${cardId}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      method: "DELETE",
+    });
+  }
+
+  changeLikeCardStatus(cardId, isLiked, token) {
+    return fetch(`${this.baseUrl}/cards/likes/${cardId}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      method: isLiked ? "PUT" : "DELETE",
+    }).then((res) => {
+      if (res.ok) {
+        return res.json();
+      }
+    });
   }
 }
 
 const api = new Api({
-  baseUrl: "https://around.nomoreparties.co/v1/web_es_07",
-  headers: {
-    authorization: "75ae37db-e1c0-4226-9bd4-60fb735a3607",
-    "Content-Type": "application/json",
-  },
+  baseUrl: "https://api.stephanydev.justlearning.net",
 });
 
 export default api;

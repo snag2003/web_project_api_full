@@ -1,22 +1,29 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import {
+  Route,
+  Switch,
+  withRouter,
+  useHistory,
+  Redirect,
+} from "react-router-dom";
 import Login from "./Login";
 import Register from "./Register";
-import ProtectedRoute from "./ProtectedRoute";
 import AroundUs from "./AroundUs";
-import { Route, Switch, Redirect, useHistory } from "react-router-dom";
+import ProtectedRoute from "./ProtectedRoute";
 import * as auth from "../utils/auth.js";
-import InfoTooltip from "./InfoTooltip";
+import InfoToolTip from "./InfoToolTip";
 
 function App() {
-  //login
-  const [loggedIn, setLoggedIn] = React.useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
   const [authPopupState, setAuthPopupState] = React.useState(false);
-  const [mode, setMode] = React.useState(false);
-  const [message, setMessage] = React.useState({ message: "" });
+  const [mode, setMode] = useState(false);
+  const [message, setMessage] = useState({ message: "" });
 
-  //userInfo
   const [userEmail, setUserEmail] = React.useState("");
   const [userPassword, setUserPassword] = React.useState("");
+
+  const [registered, setRegistered] = useState(false);
+  const [token, setToken] = useState(localStorage.getItem("token"));
 
   const history = useHistory();
 
@@ -45,76 +52,77 @@ function App() {
     });
   }
 
-  function authorize() {
-    return auth
+  function handleLogin() {
+    setLoggedIn(true);
+  }
+
+  function authorize(e) {
+    auth
       .authorize(userEmail, userPassword)
       .then((data) => {
-        if (!data) {
-          renderFailure();
-          throw new Error("Uy, algo salió mal.");
-        }
-        if (data.token) {
-          setLoggedIn(true);
+        if (data && data.token) {
+          setToken(data.token);
+          localStorage.setItem("token", data.token);
+          handleLogin();
+          history.push("/main");
+        } else {
+          resetForm();
+          if (!userEmail || !userPassword) {
+            renderFailure();
+            throw new Error(
+              "400 - one or more of the fields were not provided"
+            );
+          }
+          if (!data) {
+            renderFailure();
+            throw new Error(
+              "401 - the user with the specified email not found"
+            );
+          }
         }
       })
-      .then(resetForm)
-      .then(() => history.push("/around"))
-      .catch((err) => {
-        console.log(err);
-        renderFailure();
-      });
+      .catch((err) => console.log(err.message));
   }
 
-  //signup
-  function register() {
-    return auth
+  function register(e) {
+    auth
       .register(userEmail, userPassword)
       .then((res) => {
-        if (!res || res.statusCode === 400) {
+        //  if (!(res.data && res.data._id)) {
+        if (!(res && res._id)) {
           renderFailure();
-          throw new Error("Uy, algo salió mal.");
+          // throw new Error(`400 - ${res.message ? res.message : res.error}`);
+          // throw new Error(
+          //   `409(Conflict)  - ${res.message ? res.message : res.error}`
+          // );
+          if (res.status === 409) {
+            return Promise.reject(new Error("(Conflict) - User already taken"));
+          }
+        } else {
+          renderSuccess();
         }
-        renderSuccess();
+      })
+      .then((res) => {
+        setRegistered(true);
+        history.push("/signin");
+        return res;
       })
       .then(resetForm)
-      .then(() => history.push("/login"))
-      .catch((err) => {
-        console.log(err);
-        renderFailure();
-      });
+      .catch((err) => console.log(err));
   }
 
-  //logout
   function signOut() {
-    localStorage.removeItem("jwt");
+    localStorage.removeItem("token");
     setLoggedIn(false);
     setUserEmail("");
-    history.push("/login");
+    history.push("/signin");
   }
 
-  React.useEffect(() => {
-    //token check
-    const jwt = localStorage.getItem("jwt");
-    if (jwt) {
-      auth
-        .getContent(jwt)
-        .then((res) => {
-          if (res) {
-            setLoggedIn(true);
-            history.push("/around");
-          }
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    }
-  }, [history]);
-
   return (
-    <div className="page">
+    <div class="page">
       <Switch>
         <ProtectedRoute
-          path="/around"
+          path="/main"
           loggedIn={loggedIn}
           email={userEmail}
           component={AroundUs}
@@ -124,13 +132,13 @@ function App() {
           mode={mode}
           setUserEmail={setUserEmail}
         />
-        <Route path="/login">
+        <Route exact path="/signin">
           <div className="loginContainer">
             <Login
               loggedIn={loggedIn}
               title="Iniciar Sesión"
               value="¿Aún no eres miembro? Regístrate aquí"
-              link="/register"
+              link="/signup"
               redirect="Regístrate"
               setLoggedIn={setLoggedIn}
               signOut={signOut}
@@ -142,7 +150,7 @@ function App() {
               setUserEmail={setUserEmail}
               setUserPassword={setUserPassword}
             />
-            <InfoTooltip
+            <InfoToolTip
               popupState={authPopupState}
               closePopup={closePopup}
               message={message}
@@ -150,13 +158,13 @@ function App() {
             />
           </div>
         </Route>
-        <Route path="/register">
+        <Route path="/signup">
           <div className="registerContainer">
             <Register
               loggedIn={loggedIn}
               title="Regístrate"
               value="¿Ya eres miembro? Inicia sesión aquí"
-              link="/login"
+              link="/signin"
               redirect="Inicia sesión"
               setLoggedIn={setLoggedIn}
               signOut={signOut}
@@ -168,7 +176,7 @@ function App() {
               setUserEmail={setUserEmail}
               setUserPassword={setUserPassword}
             />
-            <InfoTooltip
+            <InfoToolTip
               popupState={authPopupState}
               closePopup={closePopup}
               message={message}
@@ -176,12 +184,13 @@ function App() {
             />
           </div>
         </Route>
-        <Route>
-          {loggedIn ? <Redirect to="/around" /> : <Redirect to="/login" />}
+        <Route exact path="/">
+          {loggedIn ? <Redirect to="/main" /> : <Redirect to="/signin" />}
         </Route>
+        <Redirect from="*" to="/" />
       </Switch>
     </div>
   );
 }
 
-export default App;
+export default withRouter(App);

@@ -6,10 +6,10 @@ function Header(props) {
 
   function handleClick() {
     if (props.redirect === "Regístrate") {
-      history.push("/register");
+      history.push("/signup");
     }
     if (props.redirect === "Inicia sesión") {
-      history.push("/login");
+      history.push("/signin");
     }
   }
 

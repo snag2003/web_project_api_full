@@ -6,7 +6,7 @@ import PopupWithForm from "./PopupWithForm";
 import EditProfilePopup from "./EditProfilePopup";
 import EditAvatarPopup from "./EditAvatarPopup";
 import AddPlacePopup from "./AddPlacePopup";
-import ImagePopup from "./ImagePopup";
+import PopupWithImage from "./PopupWithImage.js";
 import api from "../utils/api";
 import { CurrentUserContext } from "../contexts/CurrentUserContext";
 import * as auth from "../utils/auth.js";
@@ -22,6 +22,8 @@ function AroundUs(props) {
   const [isImagePopupOpen, setIsImagePopupOpen] = useState(false);
 
   const [currentUser, setCurrentUser] = useState({});
+
+  const [token, setToken] = useState(localStorage.getItem("token"));
 
   const [cards, setCards] = useState([]);
 
@@ -47,14 +49,14 @@ function AroundUs(props) {
 
   function handleCardLike(card) {
     const isLiked = card.likes.some((i) => i._id === currentUser._id);
-    api.changeLikeCardStatus(card._id, !isLiked).then((newCard) => {
+    api.changeLikeCardStatus(card._id, !isLiked, token).then((newCard) => {
       setCards((state) => state.map((c) => (c._id === card._id ? newCard : c)));
     });
   }
 
   function handleCardDelete(cardProps) {
     api
-      .deleteCard(cardProps.card._id)
+      .deleteCard(cardProps.card._id, token)
       .then(() => {
         const newCards = cards.filter((c) => {
           return c._id !== cardProps.card._id;
@@ -68,19 +70,17 @@ function AroundUs(props) {
 
   function handleUpdateUser(info) {
     api
-      .editUserInfo(info)
+      .updateProfile(info, token)
       .then((newUser) => {
         setCurrentUser(newUser);
         closeAllPopups();
       })
-      .catch((err) => {
-        console.log(err);
-      });
+      .catch((err) => console.log(err));
   }
 
   function handleAddPlaceSubmit(cardProps) {
     api
-      .postNewCard(cardProps)
+      .postNewCard(cardProps, token)
       .then((newCard) => {
         setCards([newCard, ...cards]);
         closeAllPopups();
@@ -92,7 +92,7 @@ function AroundUs(props) {
 
   function handleUpdateAvatar(avatarInput) {
     api
-      .editAvatar(avatarInput.avatar)
+      .editAvatar(avatarInput.avatar, token)
       .then((newUser) => {
         setCurrentUser(newUser);
         closeAllPopups();
@@ -104,13 +104,13 @@ function AroundUs(props) {
 
   useEffect(() => {
     api
-      .getUserInfo()
+      .getUserInfo(token)
       .then((res) => {
         setCurrentUser(res);
       })
       .then(() => {
         api
-          .getInitialCards()
+          .getInitialCards(token)
           .then((res) => {
             setCards(
               res.map((card) => ({
@@ -129,26 +129,29 @@ function AroundUs(props) {
       .catch((err) => {
         console.log(err);
       });
+  }, [token]);
 
-    const jwt = localStorage.getItem("jwt");
-    auth
-      .getContent(jwt)
-      .then((res) => {
-        if (res) {
-          props.setUserEmail(res.data.email);
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }, []);
+  useEffect(() => {
+    if (token) {
+      auth
+        .getContent(token)
+        .then((res) => {
+          if (res) {
+            props.setUserEmail(res.data.email);
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    }
+  }, [token]);
 
   return (
     <CurrentUserContext.Provider value={currentUser}>
       <div className="page">
         <Header
           redirect="Cerrar Sesión"
-          link="/login"
+          link="/signin"
           email={props.email}
           signOut={props.signOut}
         />
@@ -183,7 +186,7 @@ function AroundUs(props) {
           buttonValue="Sí"
           onClose={closeAllPopups}
         ></PopupWithForm>
-        <ImagePopup
+        <PopupWithImage
           isOpen={isImagePopupOpen}
           link={selectedCard.link}
           name={selectedCard.name}

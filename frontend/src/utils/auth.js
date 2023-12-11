@@ -1,4 +1,4 @@
-export const BASE_URL = "https://register.nomoreparties.co";
+export const BASE_URL = "https://api.stephanydev.justlearning.net";
 
 export const register = (email, password) => {
   return fetch(`${BASE_URL}/signup`, {
@@ -8,19 +8,13 @@ export const register = (email, password) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ password, email }),
-  })
-    .then((response) => {
-      try {
-        if (response.status === 201) {
-          return response.json();
-        }
-      } catch (e) {
-        return e;
-      }
-    })
-    .then((res) => {
-      return res;
-    });
+  }).then((response) => {
+    if (response.status === 201) {
+      return response.json();
+    } else {
+      throw new Error("409 - Unsuccessful registration");
+    }
+  });
 };
 
 export const authorize = (email, password) => {
@@ -34,8 +28,8 @@ export const authorize = (email, password) => {
   })
     .then((response) => response.json())
     .then((data) => {
-      if (data.token) {
-        localStorage.setItem("jwt", data.token);
+      if (!data.message) {
+        localStorage.setItem("token", data.token);
         return data;
       } else {
         return;
@@ -52,6 +46,13 @@ export const getContent = (token) => {
       Authorization: `Bearer ${token}`,
     },
   })
-    .then((res) => res.json())
-    .then((data) => data);
+    .then((res) => {
+      return res.ok
+        ? res.json()
+        : Promise.reject(`${res.status} - ${res.message}`);
+    })
+    .then((data) => {
+      return data;
+    })
+    .catch((err) => console.log(err));
 };

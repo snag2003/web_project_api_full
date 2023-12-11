@@ -1,31 +1,35 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const dotenv = require("dotenv");
 
-const User = require('../models/user');
+const User = require("../models/user");
 
-const AuthError = require('../errors/auth-err');
-const BadRequestError = require('../errors/bad-request-err');
-const ConflictError = require('../errors/conflict-err');
-const InternalServerError = require('../errors/internal-server-err');
-const NotFoundError = require('../errors/not-found-err');
+const AuthError = require("../errors/auth-err");
+const BadRequestError = require("../errors/bad-request-err");
+const ConflictError = require("../errors/conflict-err");
+const InternalServerError = require("../errors/internal-server-err");
+const NotFoundError = require("../errors/not-found-err");
 
+dotenv.config();
 const { NODE_ENV, JWT_SECRET } = process.env;
 
 module.exports.getUsers = (req, res, next) => {
   User.find({})
+    .select("+password")
     .then((users) => res.status(200).send({ data: users }))
     .catch(() => {
-      throw new InternalServerError('Un error ha ocurrido en el servidor');
+      throw new InternalServerError("Un error ha ocurrido en el servidor");
     })
     .catch(next);
 };
 
 module.exports.getUserById = (req, res, next) => {
-  User.findById(req.params.id === 'me' ? req.user._id : req.params.id)
+  User.findById(req.params.id === "me" ? req.user._id : req.params.id)
+    .select("+password")
     .then((user) => res.status(200).send({ data: user }))
     .catch((err) => {
-      if (err.name === 'CastError' || err.name === 'TypeError') {
-        throw new NotFoundError('Usuario no encontrado');
+      if (err.name === "CastError" || err.name === "TypeError") {
+        throw new NotFoundError("Usuario no encontrado");
       }
       next(err);
     })
@@ -33,24 +37,24 @@ module.exports.getUserById = (req, res, next) => {
 };
 
 module.exports.createUser = (req, res, next) => {
-  const {
-    name, about, avatar, email, password,
-  } = req.body;
+  const { name, about, avatar, email, password } = req.body;
   bcrypt
     .hash(password, 10)
-    .then((hash) => User.create({
-      name,
-      about,
-      avatar,
-      email,
-      password: hash,
-    }))
-    .then((user) => res.status(200).send({ data: user }))
+    .then((hash) =>
+      User.create({
+        name,
+        about,
+        avatar,
+        email,
+        password: hash,
+      })
+    )
+    .then((user) => res.status(200).send({ _id: user._id }))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        throw new BadRequestError('No ha sido posible crear el usuario.');
-      } else if (err.name === 'MongoError') {
-        throw new ConflictError('Usuario no disponible');
+      if (err.name === "ValidationError") {
+        throw new BadRequestError("No ha sido posible crear el usuario.");
+      } else if (err.name === "MongoError") {
+        throw new ConflictError("Usuario no disponible");
       }
       next(err);
     })
@@ -62,12 +66,13 @@ module.exports.updateProfile = (req, res, next) => {
   User.findByIdAndUpdate(
     { _id: req.user._id },
     { $set: { name, about } },
-    { new: true },
+    { new: true }
   )
+    .select("+password")
     .then((user) => res.status(200).send({ data: user }))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        throw new BadRequestError('No ha sido posible actualizar el usuario');
+      if (err.name === "ValidationError") {
+        throw new BadRequestError("No ha sido posible actualizar el usuario");
       }
     })
     .catch(next);
@@ -78,25 +83,45 @@ module.exports.updateAvatar = (req, res, next) => {
   User.findByIdAndUpdate(
     { _id: req.user._id },
     { $set: { avatar } },
-    { new: true },
+    { new: true }
   )
+    .select("+password")
     .then((user) => res.status(200).send({ data: user }))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        throw new BadRequestError('No ha sido posible actualizar el usuario');
+      if (err.name === "ValidationError") {
+        throw new BadRequestError("No ha sido posible actualizar el usuario");
       }
     })
     .catch(next);
 };
 
+module.exports.register = (req, res) => {
+  const { email, password } = req.body;
+  bcrypt
+    .hash(password, 10)
+    .then((hash) =>
+      User.create({
+        email,
+        password: hash,
+      })
+    )
+    .then((user) => {
+      res.status(201).send({
+        _id: user._id,
+      });
+    })
+    .catch((err) => {
+      res.status(400).send(err);
+    });
+};
 module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
 
   User.findOne({ email })
-    .select('+password')
+    .select("+password")
     .then((user) => {
       if (!user) {
-        throw new AuthError('Incorrect email or password');
+        throw new AuthError("Incorrect email or password");
       } else {
         req._id = user._id;
         return bcrypt.compare(password, user.password);
@@ -104,17 +129,17 @@ module.exports.login = (req, res, next) => {
     })
     .then((matched) => {
       if (!matched) {
-        throw new AuthError('Incorect email or password');
+        throw new AuthError("Incorect email or password");
       }
 
       const token = jwt.sign(
         { _id: req._id },
-        NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret',
-        { expiresIn: '7d' },
+        NODE_ENV === "production" ? JWT_SECRET : "dev-secret",
+        { expiresIn: "7d" }
       );
 
-      res.header('authorization', `Bearer ${token}`);
-      res.cookie('token', token, { httpOnly: true });
+      res.header("authorization", `Bearer ${token}`);
+      res.cookie("token", token, { httpOnly: true });
       res.status(200).send({ token });
     })
     .catch(next);
