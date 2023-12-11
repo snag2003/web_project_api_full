@@ -1,6 +1,5 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const dotenv = require("dotenv");
 
 const User = require("../models/user");
 
@@ -10,12 +9,10 @@ const ConflictError = require("../errors/conflict-err");
 const InternalServerError = require("../errors/internal-server-err");
 const NotFoundError = require("../errors/not-found-err");
 
-dotenv.config();
 const { NODE_ENV, JWT_SECRET } = process.env;
 
 module.exports.getUsers = (req, res, next) => {
   User.find({})
-    .select("+password")
     .then((users) => res.status(200).send({ data: users }))
     .catch(() => {
       throw new InternalServerError("Un error ha ocurrido en el servidor");
@@ -25,7 +22,6 @@ module.exports.getUsers = (req, res, next) => {
 
 module.exports.getUserById = (req, res, next) => {
   User.findById(req.params.id === "me" ? req.user._id : req.params.id)
-    .select("+password")
     .then((user) => res.status(200).send({ data: user }))
     .catch((err) => {
       if (err.name === "CastError" || err.name === "TypeError") {
@@ -49,7 +45,7 @@ module.exports.createUser = (req, res, next) => {
         password: hash,
       })
     )
-    .then((user) => res.status(200).send({ _id: user._id }))
+    .then((user) => res.status(200).send({ data: user }))
     .catch((err) => {
       if (err.name === "ValidationError") {
         throw new BadRequestError("No ha sido posible crear el usuario.");
@@ -68,7 +64,6 @@ module.exports.updateProfile = (req, res, next) => {
     { $set: { name, about } },
     { new: true }
   )
-    .select("+password")
     .then((user) => res.status(200).send({ data: user }))
     .catch((err) => {
       if (err.name === "ValidationError") {
@@ -85,7 +80,6 @@ module.exports.updateAvatar = (req, res, next) => {
     { $set: { avatar } },
     { new: true }
   )
-    .select("+password")
     .then((user) => res.status(200).send({ data: user }))
     .catch((err) => {
       if (err.name === "ValidationError") {
@@ -95,25 +89,6 @@ module.exports.updateAvatar = (req, res, next) => {
     .catch(next);
 };
 
-module.exports.register = (req, res) => {
-  const { email, password } = req.body;
-  bcrypt
-    .hash(password, 10)
-    .then((hash) =>
-      User.create({
-        email,
-        password: hash,
-      })
-    )
-    .then((user) => {
-      res.status(201).send({
-        _id: user._id,
-      });
-    })
-    .catch((err) => {
-      res.status(400).send(err);
-    });
-};
 module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
 
