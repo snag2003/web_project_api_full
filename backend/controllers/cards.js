@@ -1,50 +1,51 @@
-const Card = require("../models/cards");
+const Card = require("../models/card");
 
-const AuthError = require("../errors/auth-err");
 const BadRequestError = require("../errors/bad-request-err");
-const InternalServerError = require("../errors/internal-server-err");
+const ServerError = require("../errors/server-err");
 const NotFoundError = require("../errors/not-found-err");
+const AuthError = require("../errors/auth-err");
 
-module.exports.getCards = (req, res, next) => {
+module.exports.getAllCards = (req, res, next) => {
   Card.find({})
-    .then((cards) => res.status(200).send({ data: cards }))
+    .then((card) => res.send({ data: card }))
     .catch(() => {
-      throw new InternalServerError("Un error ha ocurrido en el servidor");
+      throw new ServerError("An error has occured on the server");
     })
     .catch(next);
 };
 
 module.exports.createCard = (req, res, next) => {
   const { name, link } = req.body;
-
   Card.create({ name, link, owner: req.user._id })
-    .then((card) => res.status(201).send({ data: card }))
+    .then((card) => res.send({ data: card }))
     .catch((err) => {
       if (err.name === "ValidationError") {
-        throw new BadRequestError("No se ha podido crear la tarjeta");
+        throw new BadRequestError(
+          "Unable to create card. Please try again later."
+        );
       }
     })
     .catch(next);
 };
 
 module.exports.deleteCard = (req, res, next) => {
-  Card.findById(req.params.cardId)
+  Card.findByIdAndRemove(req.params.cardId)
     .then((card) => {
       if (card && req.user._id.toString() === card.owner.toString()) {
         Card.deleteOne(card).then((deletedCard) => {
           res.send(deletedCard);
         });
       } else if (!card) {
-        throw new NotFoundError("Tarjeta no encontrada.");
+        throw new NotFoundError("Card not found.");
       } else {
         throw new AuthError(
-          "Necesitas ser el dueño de esta tarjeta para poder eliminarla"
+          "You need to be the owner of this card to delete it."
         );
       }
     })
     .catch((err) => {
       if (err.name === "CastError" || err.statusCode === 404) {
-        throw new NotFoundError("Tarjeta no encontrada.");
+        throw new NotFoundError("Card not found.");
       }
       next(err);
     })
@@ -59,14 +60,14 @@ module.exports.likeCard = (req, res, next) => {
   )
     .then((card) => {
       if (card) {
-        res.status(200).send(card);
+        res.send(card);
       } else if (!card) {
-        throw new NotFoundError("Tarjeta no encontrada");
+        throw new NotFoundError("Card not found.");
       }
     })
     .catch((err) => {
-      if (err.statusCode === 404) {
-        throw new NotFoundError("Tarjeta no encontrada");
+      if (err.name === "CastError" || err.statusCode === 404) {
+        throw new NotFoundError("Card not found.");
       }
     })
     .catch(next);
@@ -80,14 +81,14 @@ module.exports.dislikeCard = (req, res, next) => {
   )
     .then((card) => {
       if (card) {
-        res.status(200).send(card);
+        res.send(card);
       } else if (!card) {
-        throw new NotFoundError("Tarjeta no encontrada");
+        throw new NotFoundError("Card not found.");
       }
     })
     .catch((err) => {
-      if (err.statusCode === 404) {
-        throw new NotFoundError("Tarjeta no encontrada");
+      if (err.name === "CastError" || err.statusCode === 404) {
+        throw new NotFoundError("Card not found.");
       }
     })
     .catch(next);

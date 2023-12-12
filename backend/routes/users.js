@@ -1,14 +1,14 @@
-const userRouter = require("express").Router();
+const router = require("express").Router();
 const { celebrate, Joi } = require("celebrate");
 
 const {
-  getUsers,
+  getAllUsers,
   getUserById,
-  updateProfile,
+  updateUser,
   updateAvatar,
 } = require("../controllers/users");
 
-userRouter.get(
+router.get(
   "/",
   celebrate({
     headers: Joi.object()
@@ -21,10 +21,10 @@ userRouter.get(
       })
       .options({ allowUnknown: true }),
   }),
-  getUsers
+  getAllUsers
 );
 
-userRouter.get(
+router.get(
   "/:id",
   celebrate({
     headers: Joi.object()
@@ -37,15 +37,17 @@ userRouter.get(
       })
       .options({ allowUnknown: true }),
     params: Joi.object().keys({
-      id: Joi.alternatives()
-        .try(Joi.string().length(24).hex(), Joi.string().regex(/^me$/))
+      // id: Joi.string().alphanum().required(),
+      // id: Joi.string().length(24).hex().required(),
+      id: Joi.string()
+        .regex(/^[A-Fa-f0-9]*/)
         .required(),
     }),
   }),
   getUserById
 );
 
-userRouter.patch(
+router.patch(
   "/me",
   celebrate({
     headers: Joi.object()
@@ -58,14 +60,14 @@ userRouter.patch(
       })
       .options({ allowUnknown: true }),
     body: Joi.object().keys({
-      name: Joi.string().min(2).max(30).required(),
-      about: Joi.string().min(2).max(30).required(),
+      name: Joi.string().required().min(2).max(30),
+      about: Joi.string().required().min(2).max(30),
     }),
   }),
-  updateProfile
+  updateUser
 );
 
-userRouter.patch(
+router.patch(
   "/me/avatar",
   celebrate({
     headers: Joi.object()
@@ -79,11 +81,15 @@ userRouter.patch(
       .options({ allowUnknown: true }),
     body: Joi.object().keys({
       avatar: Joi.string()
-        .uri({ scheme: ["http", "https"] })
-        .required(),
+        .required()
+        // eslint-disable-next-line no-useless-escape
+        .pattern(
+          /^(http:\/\/|https:\/\/)(w{3}\.)?([\w\-\/\(\):;,\?]+\.{1}?[\w\-\/\(\):;,\?]+)+#?$/
+        ),
+      // .uri({ scheme: ['http', 'https'] }),
     }),
   }),
   updateAvatar
 );
 
-module.exports = userRouter;
+module.exports = router;

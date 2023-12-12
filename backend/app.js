@@ -1,12 +1,11 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const { celebrate, Joi, errors, isCelebrateError } = require("celebrate");
+const path = require("path");
 const cors = require("cors");
+const dotenv = require("dotenv");
 const cardsRouter = require("./routes/cards");
 const usersRouter = require("./routes/users");
-const dotenv = require("dotenv");
-
-dotenv.config();
 
 const { requestLogger, errorLogger } = require("./middleware/logger");
 
@@ -16,7 +15,7 @@ const BadRequestError = require("./errors/bad-request-err");
 const NotFoundError = require("./errors/not-found-err");
 const ConflictError = require("./errors/conflict-err");
 
-const { PORT = 3000 } = process.env;
+const { PORT = 3001 } = process.env;
 const app = express();
 
 mongoose.connect("mongodb://localhost:27017/aroundb");
@@ -31,11 +30,26 @@ app.use(requestLogger);
 app.use("/cards", auth, cardsRouter);
 app.use("/users", auth, usersRouter);
 
+// Server crash test
 app.get("/crash-test", () => {
   setTimeout(() => {
-    throw new Error("El servidor va a caer");
+    throw new Error("Server will crash now");
   }, 0);
 });
+
+app.post(
+  "/signup",
+  celebrate({
+    body: Joi.object().keys({
+      name: Joi.string().min(2).max(30).pattern(new RegExp("^[a-zA-Z-\\s]*$")),
+      about: Joi.string().min(2).max(30),
+      avatar: Joi.string().uri(),
+      email: Joi.string().required().email(),
+      password: Joi.string().min(8).alphanum().required(),
+    }),
+  }),
+  createUser
+);
 
 app.post(
   "/signin",
@@ -46,20 +60,6 @@ app.post(
     }),
   }),
   login
-);
-app.post(
-  "/signup",
-  celebrate({
-    body: Joi.object().keys({
-      name: Joi.string().min(2).max(30).pattern(new RegExp("^[a-zA-Z-\\s]*$")),
-      about: Joi.string().min(2).max(30),
-      // avatar: Joi.string().uri({ scheme: ['http', 'https'] }),
-      avatar: Joi.string().uri(),
-      email: Joi.string().required().email(),
-      password: Joi.string().min(8).alphanum().required(),
-    }),
-  }),
-  createUser
 );
 
 app.get("*", (req, res) => {
@@ -88,7 +88,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.use(() => {
+app.use((req, res) => {
   throw new NotFoundError("Requested resource not found.");
 });
 

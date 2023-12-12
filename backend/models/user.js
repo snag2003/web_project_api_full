@@ -5,30 +5,28 @@ const userSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    default: "Jacques Cousteau",
     minlength: 2,
     maxlength: 30,
+    default: "Jacques Cousteau",
   },
   about: {
     type: String,
     required: true,
-    default: "Explorador",
     minlength: 2,
     maxlength: 30,
+    default: "Explorer",
   },
   avatar: {
     type: String,
     required: true,
-    default:
-      "https://practicum-content.s3.us-west-1.amazonaws.com/resources/moved_avatar_1604080799.jpg",
     validate: {
-      validator: (url) =>
-        validator.isURL(url, {
-          protocols: ["http", "https"],
-          require_protocol: true,
-        }),
-      message: "Lo sentimos. Tienes que poner un link valido",
+      validator(v) {
+        return /^(https?):\/\/(www\.)?[\w-@:%+~#=]+[.][.\w/\-?#=&~@:()!$+%]*$/gm.test(
+          v
+        );
+      },
     },
+    default: "https://pictures.s3.yandex.net/resources/avatar_1604080799.jpg",
   },
   email: {
     type: String,
@@ -36,13 +34,21 @@ const userSchema = new mongoose.Schema({
     unique: true,
     validate: {
       validator: (email) => validator.isEmail(email),
-      message: "Lo sentimos. Tienes que poner una direccíon de email valida",
+      message: "Email address not valid ",
     },
   },
   password: {
     type: String,
     required: true,
     select: false,
+    // minlength: 8
+    // validate: {
+    //   validator(v) {
+    //     return /^(?=.*d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,1024}*$/gm.test(
+    //       v
+    //     );
+    //   },
+    // },
   },
 });
 

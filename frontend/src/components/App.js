@@ -22,7 +22,6 @@ function App() {
   const [userEmail, setUserEmail] = React.useState("");
   const [userPassword, setUserPassword] = React.useState("");
 
-  const [registered, setRegistered] = useState(false);
   const [token, setToken] = useState(localStorage.getItem("token"));
 
   const history = useHistory();
@@ -88,13 +87,8 @@ function App() {
     auth
       .register(userEmail, userPassword)
       .then((res) => {
-        //  if (!(res.data && res.data._id)) {
         if (!(res && res._id)) {
           renderFailure();
-          // throw new Error(`400 - ${res.message ? res.message : res.error}`);
-          // throw new Error(
-          //   `409(Conflict)  - ${res.message ? res.message : res.error}`
-          // );
           if (res.status === 409) {
             return Promise.reject(new Error("(Conflict) - User already taken"));
           }
@@ -103,7 +97,6 @@ function App() {
         }
       })
       .then((res) => {
-        setRegistered(true);
         history.push("/signin");
         return res;
       })
@@ -119,7 +112,7 @@ function App() {
   }
 
   return (
-    <div class="page">
+    <div className="page">
       <Switch>
         <ProtectedRoute
           path="/main"
