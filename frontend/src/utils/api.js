@@ -133,7 +133,7 @@ class Api {
 }
 
 const api = new Api({
-  baseUrl: "https://api.stephanydev.justlearning.net",
+  baseUrl: "https://api.stephany.developer.li",
 });
 
 export default api;
