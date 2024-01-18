@@ -1,4 +1,4 @@
-export const BASE_URL = "https://api.stephanydev.justlearning.net";
+export const BASE_URL = "https://api.stephany.developer.li";
 
 export const register = (email, password) => {
   return fetch(`${BASE_URL}/signup`, {
