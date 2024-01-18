@@ -3,10 +3,10 @@
 Página Web que muestra fotos como una red social con backend de api integrado
 
 Pagina Web: 
-- https://stephanydev.justlearning.net
+- https://stephany.developer.li
 
 API:
-- https://api.stephanydev.justlearning.net
+- https://api.stephany.developer.li
 
 ## Tecnologías Usadas:
 - HTML
